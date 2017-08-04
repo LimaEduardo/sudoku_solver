@@ -1,11 +1,8 @@
-cont = 0
+conj = set()
+conj.add(1)
+conj.add(2)
+conj.add(3)
+conj.add(4)
 
-limiteBloco = 2
-ordem = 4
-
-for i in range(i,limiteBloco,limiteBloco):
-	linha = i*ordem
-	for j in range(linha,limiteBloco):
-		print (j)
-	
-	
+for num in conj:
+	print (num)
