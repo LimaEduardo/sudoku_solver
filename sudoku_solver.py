@@ -24,6 +24,12 @@ class vertice:
         print("Grau:",self.grau)
         print("Grau saturação:",self.grauSaturacao)
 
+    def incrimentaSaturacao(self):
+        self.grauSaturacao += 1
+
+    def decrementaSaturacao(self):
+        self.grauSaturacao += 1
+
     def getSaturacao(self):
         return self.grauSaturacao
 
@@ -42,34 +48,48 @@ class vertice:
         self.vizinhos.append(vertice)
         self.grau += 1
 
-    def menorCorPossivel(self,ordem):
+    def coresPossiveis(self,ordem):
         possibilidades = list(range(1,ordem+1))
         conjPossibilidades = set(possibilidades)
-        print (conjPossibilidades)
         jaExistente = set()
         for vizinho in self.vizinhos:
             if vizinho.getConteudo() == "N":
                 continue
             jaExistente.add(int(vizinho.getConteudo()))
-        print("conjPoss",conjPossibilidades)
-        print("jaExis",jaExistente)
         conjPossibilidades = conjPossibilidades - jaExistente
-        print (self.getIndice())
-        print ("conjpossFin",conjPossibilidades)
-        return min(conjPossibilidades)
+        #print("conj",conjPossibilidades)
+        #print("len",len(conjPossibilidades))
+        #print("indice",self.indice)
+        if (len(conjPossibilidades) == 0):
+            return -1
+        #print("retorno")
+        return list(conjPossibilidades)
+
+    def incrimentaSaturacaoVizinhos(self):
+        for vizinho in self.vizinhos:
+            vizinho.incrimentaSaturacao()
+
+    def decrementaSaturacaoVizinhos(self):
+        for vizinho in self.vizinhos:
+            vizinho.decrementaSaturacao()
 
 
 
 class grafo:
-    def __init__(self,tabela):
+    def __init__(self,tabela,arquivoSaida):
         self.quantidadeVertices = len(tabela)
         self.ordem = int(math.sqrt(self.quantidadeVertices))
         self.dimensaoBloco = int(math.sqrt(self.ordem))
         self.vertices = self.constroiVertices(tabela)
         self.blocos = self.formaBloco()
+        self.arquivoSaida = arquivoSaida
         self.mergeVizinhos()
-        self.dsatur()
+        self.escreveArquivo()
         self.debug()
+        if self.dsatur():
+            self.escreveArquivo()
+        else:
+            print("Sem solução")
         #self.getBlocos()
         #self.getVertices()
 
@@ -142,25 +162,46 @@ class grafo:
                 return False
         return True
 
+    def verticesNaoColoridos(self):
+        verticesNaoColoridos = set()
+        for vertice in self.vertices:
+            if (self.vertices[vertice].getConteudo() == "N"):
+                verticesNaoColoridos.add(vertice)
+        return verticesNaoColoridos
+
 
 
     def dsatur(self):
-        todosColoridos = False
-        while not todosColoridos:
-            maiorSaturacao = self.maiorSaturacao()
-            self.vertices[maiorSaturacao].setConteudo(self.vertices[maiorSaturacao].menorCorPossivel(self.ordem))
-            todosColoridos = self.todosColoridos()
+        if self.todosColoridos():
+            return True
+        maiorSaturacao = self.maiorSaturacao()
+        coresPossiveis = self.vertices[maiorSaturacao].coresPossiveis(self.ordem)
+        if coresPossiveis == -1:
+            return False
+        if not coresPossiveis:
+            return False
+        for cor in coresPossiveis:
+            self.vertices[maiorSaturacao].setConteudo(cor)
+            self.vertices[maiorSaturacao].incrimentaSaturacaoVizinhos()
+            if self.dsatur():
+                return True
+            else:
+                self.vertices[maiorSaturacao].decrementaSaturacaoVizinhos()
+                self.vertices[maiorSaturacao].setConteudo("N")
+        return False
 
 
+    def escreveArquivo(self):
+        arquivoSaida = open(self.arquivoSaida, "w+")
+        for vertices in self.vertices:                
+            if(vertices % self.ordem == 0 and vertices != 0):
+                print("\n",file=arquivoSaida)
+            print(self.vertices[vertices].getConteudo()," ",end="",file=arquivoSaida)
 
     def debug(self):
-        
-        
+        print("s")
 
-        for chave in self.vertices:
-            print("---")
-            print("conteudo:",self.vertices[chave].getConteudo())
-            print("---")
+
 
     def getBlocos(self):
         print (self.blocos)
@@ -187,8 +228,9 @@ class grafo:
 
 if __name__ == "__main__":
     nome_arquivo = ""
-    if len(sys.argv) == 2:
+    if len(sys.argv) == 3:
         nome_arquivo = sys.argv[1]
+        arquivo_saida = sys.argv[2]
     else:
         print("Número inválido de argumentos")
     arquivo = open(nome_arquivo,"r")
@@ -196,7 +238,7 @@ if __name__ == "__main__":
     for linha in arquivo:
         tabela = tabela + ((linha.replace("\n","").replace(".","N")))
     tabela = list(tabela)
-    grafo(tabela)
+    grafo(tabela,arquivo_saida)
     
 
             
